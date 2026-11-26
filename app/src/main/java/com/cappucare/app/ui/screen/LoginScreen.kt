@@ -18,12 +18,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -61,11 +62,10 @@ import com.cappucare.app.viewmodel.CappucareViewModel
  *
  * La pantalla solo dibuja y llama al ViewModel:
  *  - validarLogin() devuelve el error de cada campo (se muestra bajo el campo con ícono);
- *  - login() busca el usuario en Room (modo local) o ingresa contra la API (modo servidor, E3-7);
- *    cuando usuarioActivo deja de ser null, se navega al Panel.
- *  - El botón "Servidor" (E3-8) abre el diálogo para cambiar la dirección de la API sin recompilar
- *    y para activar el MODO LOCAL (respaldo sin servidor); "Ingresar" muestra un indicador mientras
- *    espera la respuesta.
+ *  - login() busca el usuario en Room y compara el SHA-256 de la clave; cuando usuarioActivo deja
+ *    de ser null, se navega al Panel. "Ingresar" muestra un indicador mientras verifica.
+ *  - "Restablecer datos de ejemplo" (con confirmación) vuelve a los 8 productos y 11 movimientos
+ *    de ejemplo: útil para repetir una demostración desde cero.
  *
  * Usuarios de prueba: encargado@cappucare.cl / encargado123 · ventas@cappucare.cl / ventas123
  */
@@ -78,9 +78,7 @@ fun LoginScreen(viewModel: CappucareViewModel, onIngresar: () -> Unit) {
     val errorCredenciales by viewModel.errorLogin.collectAsState()
     val usuarioActivo by viewModel.usuarioActivo.collectAsState()
     val cargando by viewModel.cargandoLogin.collectAsState()
-    val urlServidor by viewModel.urlServidor.collectAsState()
-    val modoLocal by viewModel.modoLocal.collectAsState()
-    var mostrarServidor by remember { mutableStateOf(false) }
+    var confirmarRestablecer by remember { mutableStateOf(false) }
 
     // RF-00 (opcional): rellena el último usuario recordado con DataStore (solo si el campo está vacío).
     val recordado by viewModel.ultimoUsuario.collectAsState()
@@ -99,9 +97,23 @@ fun LoginScreen(viewModel: CappucareViewModel, onIngresar: () -> Unit) {
         if (!errores.hayErrores && !cargando) viewModel.login(usuario.trim(), clave)
     }
 
-    // Diálogo "Servidor": dirección de la API (E3-8) e interruptor de modo local. Siempre disponible.
-    if (mostrarServidor) {
-        DialogoServidor(viewModel = viewModel, onCerrar = { mostrarServidor = false })
+    // Confirmación antes de borrar los cambios y volver a los datos de ejemplo.
+    if (confirmarRestablecer) {
+        AlertDialog(
+            onDismissRequest = { confirmarRestablecer = false },
+            icon = { Icon(Icons.Filled.RestartAlt, contentDescription = null) },
+            title = { Text("¿Restablecer datos de ejemplo?") },
+            text = { Text("Se borran los productos y movimientos registrados en este equipo y se vuelve a los 8 productos y 11 movimientos de ejemplo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmarRestablecer = false
+                    viewModel.restablecerDatos()
+                }) { Text("Restablecer") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmarRestablecer = false }) { Text("Cancelar") }
+            }
+        )
     }
 
     Scaffold { padding ->
@@ -195,18 +207,17 @@ fun LoginScreen(viewModel: CappucareViewModel, onIngresar: () -> Unit) {
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Conectando…")
+                    Text("Verificando…")
                 } else {
                     Text("Ingresar")
                 }
             }
 
-            // Cambiar la dirección de la API sin recompilar (emulador, red local, Port Forwarding...)
-            // y elegir entre modo servidor y modo local.
-            TextButton(onClick = { mostrarServidor = true }, enabled = !cargando) {
-                Icon(Icons.Filled.Dns, contentDescription = null)
+            // Volver a los datos de ejemplo (pide confirmación).
+            TextButton(onClick = { confirmarRestablecer = true }, enabled = !cargando) {
+                Icon(Icons.Filled.RestartAlt, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(if (modoLocal) "Servidor: modo local (sin servidor)" else "Servidor: $urlServidor", style = MaterialTheme.typography.labelMedium)
+                Text("Restablecer datos de ejemplo", style = MaterialTheme.typography.labelMedium)
             }
         }
     }

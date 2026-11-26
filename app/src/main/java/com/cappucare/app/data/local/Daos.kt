@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface UsuarioDao {
 
-    /** RF-00: busca por usuario sin distinguir mayúsculas. La clave se verifica en el ViewModel. */
+    /** RF-00: busca por usuario sin distinguir mayúsculas. La clave se verifica en FuenteLocal. */
     @Query("SELECT * FROM usuarios WHERE lower(usuario) = lower(:usuario) LIMIT 1")
     suspend fun buscarPorUsuario(usuario: String): UsuarioEntity?
 }
@@ -52,29 +52,22 @@ interface ProductoDao {
     @Query("UPDATE productos SET estado = :estado WHERE id = :id")
     suspend fun actualizarEstado(id: String, estado: String)
 
-    // --- EA3: Room como copia local (caché) de lo que dice el servidor ---------------------------
-
-    /** Inserta o actualiza un producto tal como lo entregó el servidor. */
+    /** Inserta o actualiza un producto (crear y editar desde FuenteLocal). */
     @Upsert
     suspend fun guardar(producto: ProductoEntity)
 
-    /** Inserta o actualiza varios productos (sin borrar y reinsertar: los movimientos los referencian). */
+    /** Inserta o actualiza varios productos ("Restablecer datos de ejemplo"). */
     @Upsert
     suspend fun guardarVarios(productos: List<ProductoEntity>)
 
-    /** Quita de la copia local los productos que el servidor ya no tiene. */
-    @Query("DELETE FROM productos WHERE id NOT IN (:idsVigentes)")
-    suspend fun borrarQueNoEstan(idsVigentes: List<String>)
-
-    /** Solo para "Restablecer datos locales" (modo local), dentro de una transacción. */
+    /** Solo para "Restablecer datos de ejemplo", dentro de una transacción. */
     @Query("DELETE FROM productos")
     suspend fun borrarTodos()
 }
 
 /**
- * RN-06: en modo local solo hay @Insert y consultas: el historial no se altera. Las funciones de
- * "EA3" existen únicamente para renovar la copia local con lo que responde el servidor; ninguna
- * pantalla ni el usuario puede editar o eliminar un movimiento.
+ * RN-06: los movimientos solo se insertan y se consultan: el historial no se edita ni se elimina.
+ * (borrarTodos existe únicamente para "Restablecer datos de ejemplo".)
  */
 @Dao
 interface MovimientoDao {
@@ -86,19 +79,10 @@ interface MovimientoDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertar(movimiento: MovimientoEntity)
 
-    // --- EA3: Room como copia local (caché) de lo que dice el servidor ---------------------------
-
-    @Upsert
-    suspend fun guardar(movimiento: MovimientoEntity)
-
     @Upsert
     suspend fun guardarVarios(movimientos: List<MovimientoEntity>)
 
-    /** Quita de la copia local los movimientos que el servidor no tiene (se ejecuta antes de borrar productos). */
-    @Query("DELETE FROM movimientos WHERE id NOT IN (:idsVigentes)")
-    suspend fun borrarQueNoEstan(idsVigentes: List<String>)
-
-    /** Solo para "Restablecer datos locales" (modo local): vuelve a los datos de ejemplo. */
+    /** Solo para "Restablecer datos de ejemplo": vuelve a los datos de ejemplo. */
     @Query("DELETE FROM movimientos")
     suspend fun borrarTodos()
 }

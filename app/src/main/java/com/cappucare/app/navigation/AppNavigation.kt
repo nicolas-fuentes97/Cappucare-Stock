@@ -6,9 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -29,7 +26,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.cappucare.app.notificacion.EscuchaAvisosStock
-import com.cappucare.app.ui.components.FranjaModo
 import com.cappucare.app.ui.screen.LoginScreen
 import com.cappucare.app.ui.screen.PanelScreen
 import com.cappucare.app.ui.screen.movimientos.HistorialMovimientosScreen
@@ -108,11 +104,8 @@ fun AppNavigation(
         }
     }
 
-    // La franja "MODO LOCAL / MODO SERVIDOR" va arriba en todas las pantallas; como ya ocupa la barra
-    // de estado, el resto consume ese espacio para que las pantallas no lo dejen en blanco dos veces.
     Column(modifier = Modifier.fillMaxSize()) {
-        FranjaModo(viewModel)
-        Box(modifier = Modifier.weight(1f).fillMaxSize().consumeWindowInsets(WindowInsets.statusBars)) {
+        Box(modifier = Modifier.weight(1f).fillMaxSize()) {
             NavHost(
                 navController = navController,
                 startDestination = Rutas.LOGIN,

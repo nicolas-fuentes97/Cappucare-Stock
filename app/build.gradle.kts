@@ -22,24 +22,6 @@ val aliasFirma = datoDeFirma("CAPPUCARE_KEY_ALIAS")
 val claveFirma = datoDeFirma("CAPPUCARE_KEY_PASSWORD")
 val hayDatosDeFirma = listOf(rutaAlmacenFirma, claveAlmacenFirma, aliasFirma, claveFirma).all { it != null }
 
-/**
- * Dirección inicial del servidor (API). Se lee de gradle.properties (API_BASE_URL) o de
- * -PAPI_BASE_URL=... en la línea de comandos; por defecto es el emulador de Android Studio
- * (10.0.2.2 = el PC que lo ejecuta). Siempre termina en "/" (requisito de Retrofit).
- */
-val apiBaseUrl: String = ((findProperty("API_BASE_URL") as String?)?.trim()?.takeIf { it.isNotEmpty() }
-    ?: "http://10.0.2.2:3000/")
-    .replace("\"", "")
-    .let { if (it.endsWith("/")) it else "$it/" }
-
-/**
- * Bandera de la Experiencia 3: define SOLO el modo inicial de la app. false = modo local (solo
- * Room, sin servidor); true = modo servidor (la API, lo que implementes en los TODO(E3-n)). Se
- * cambia en gradle.properties (USAR_API=true) o con -PUSAR_API=true. Después, el usuario cambia el
- * modo desde la app (Login > Servidor > "Modo local") y esa preferencia queda guardada.
- */
-val usarApi: Boolean = (findProperty("USAR_API") as String?)?.trim()?.equals("true", ignoreCase = true) ?: false
-
 android {
     namespace = "com.cappucare.app"
     compileSdk = 35
@@ -52,10 +34,6 @@ android {
         versionName = "3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // EA3: dirección inicial del servidor y bandera del modo API (ver arriba).
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
-        buildConfigField("boolean", "USAR_API", usarApi.toString())
     }
 
     signingConfigs {
@@ -122,13 +100,11 @@ dependencies {
     // --- Recurso nativo: cámara para leer QR / código de barras (RNF-06) ---
     implementation(libs.zxing.android.embedded)
 
-    // --- EA3: capa remota (API REST) con Retrofit + OkHttp (paquete data/remote/) ---
+    // --- API externa (mindicador.cl) con Retrofit + Gson, como en la Guía 14 (paquete data/remote/) ---
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)
-    // El registro HTTP solo existe en el build debug (ver src/debug/.../RegistroHttp.kt).
-    debugImplementation(libs.okhttp.logging.interceptor)
 
     // --- Dependencias estándar del proyecto (template de Android Studio) ---
     implementation(libs.androidx.core.ktx)
@@ -142,7 +118,6 @@ dependencies {
 
     // --- Pruebas ---
     testImplementation(libs.junit)
-    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.junit)
