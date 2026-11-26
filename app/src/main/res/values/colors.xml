@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores provisionales (logo e ícono), iguales a ui/theme/Theme.kt. No hay manual de
+         marca oficial de la organización. -->
+    <color name="marca_verde">#FF00796B</color>
+    <color name="marca_blanco">#FFFFFFFF</color>
+    <color name="marca_verde_claro">#FFB2DFDB</color>
+</resources>

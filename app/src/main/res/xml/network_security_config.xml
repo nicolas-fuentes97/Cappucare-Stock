@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Seguridad de red.
+
+  - https: sin restricciones (certificados del sistema).
+  - http (texto plano): Android NO permite indicar rangos de IP (10.x, 172.16-31.x, 192.168.x.x)
+    en este archivo, y la IP del PC cambia de una red a otra. Por eso el sistema lo permite aquí y
+    la app lo limita en código: solo se acepta http hacia 10.0.2.2 (emulador), localhost,
+    127.x y redes privadas (lo valida reglas/UrlServidor.kt al guardar la dirección del servidor).
+  - Para Internet usa siempre https (Port Forwarding de VS Code, Render, Railway, Koyeb...).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

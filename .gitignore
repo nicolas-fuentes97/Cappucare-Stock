@@ -1,0 +1,19 @@
+# Android Studio / Gradle
+*.iml
+.gradle/
+.idea/
+.kotlin/
+.externalNativeBuild/
+.cxx/
+build/
+app/build/
+captures/
+.DS_Store
+
+# Llave de evaluación: la pauta pide incluir el .jks, el APK firmado y su configuración en el repositorio
+local.properties
+
+# EA3: archivos de la API y de pruebas locales
+backend/node_modules/
+backend/data/db.json
+*.log
