@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
@@ -28,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -50,7 +52,8 @@ import com.cappucare.app.viewmodel.CappucareViewModel
  * RF-08 · Detalle de un producto: todos sus datos y su disponibilidad actual.
  * RF-03 · Cambio de estado (con confirmación antes de "Dado de baja").
  * Accesos a registrar un movimiento (RF-04/05) o ver su historial (RF-10).
- * RN-08: "Actualizar estado" y "Editar datos" solo los ve el Personal encargado.
+ * Eliminar (CRUD): solo productos SIN movimientos, con confirmación; con historial se da de baja.
+ * RN-08: "Actualizar estado", "Editar datos" y "Eliminar" solo los ve el Personal encargado.
  */
 @Composable
 fun ProductoDetalleScreen(navController: NavHostController, viewModel: CappucareViewModel) {
@@ -58,6 +61,7 @@ fun ProductoDetalleScreen(navController: NavHostController, viewModel: Cappucare
     val productos by viewModel.productos.collectAsState()
     val producto = productos.find { it.id == seleccionadoId }
     val usuario by viewModel.usuarioActivo.collectAsState()
+    val movimientos by viewModel.movimientos.collectAsState()
 
     Scaffold(topBar = { BarraSuperior("Detalle del producto", navController) }) { padding ->
         if (producto == null) {
@@ -67,7 +71,28 @@ fun ProductoDetalleScreen(navController: NavHostController, viewModel: Cappucare
 
         var nuevoEstado by remember(producto.id) { mutableStateOf(producto.estado) }
         var confirmarBaja by remember { mutableStateOf(false) }
+        var confirmarEliminar by remember { mutableStateOf(false) }
         val puedeEditar = usuario?.perfil?.puedeEditarCatalogo == true   // RN-08
+        val tieneMovimientos = movimientos.any { it.productoId == producto.id }
+
+        // Confirmación antes de eliminar (solo productos sin movimientos). Al eliminar vuelve a la lista.
+        if (confirmarEliminar) {
+            AlertDialog(
+                onDismissRequest = { confirmarEliminar = false },
+                icon = { Icon(Icons.Filled.DeleteForever, contentDescription = null) },
+                title = { Text("¿Eliminar este producto?") },
+                text = { Text("\"${producto.nombre}\" se borrará de la base de datos. Esta acción no se puede deshacer.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmarEliminar = false
+                        viewModel.eliminarProducto(producto.id) { navController.popBackStack() }
+                    }) { Text("Eliminar") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmarEliminar = false }) { Text("Cancelar") }
+                }
+            )
+        }
 
         // Confirmación antes de una acción destructiva (dar de baja un producto).
         if (confirmarBaja) {
@@ -177,6 +202,24 @@ fun ProductoDetalleScreen(navController: NavHostController, viewModel: Cappucare
             if (puedeEditar) {
                 OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { navController.navigate(Rutas.PRODUCTO_FORM) }) {
                     Text("Editar datos")
+                }
+                // Eliminar: solo si no tiene movimientos (RN-06: el historial no se borra).
+                if (tieneMovimientos) {
+                    Text(
+                        "Este producto tiene movimientos: no se puede eliminar. Si ya no se usa, dalo de baja.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { confirmarEliminar = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Filled.DeleteForever, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Eliminar producto")
+                    }
                 }
             }
         }

@@ -6,7 +6,7 @@ import com.cappucare.app.model.Usuario
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Almacenamiento del MODO LOCAL: lo mínimo que [com.cappucare.app.data.repository.FuenteLocal]
+ * Almacenamiento de la app: lo mínimo que [com.cappucare.app.data.repository.FuenteLocal]
  * necesita de la base. La implementación real usa Room ([AlmacenRoom]) y las pruebas JVM usan una
  * copia en memoria, sin Android. Las reglas de negocio NO están aquí: este contrato solo guarda y lee.
  */
@@ -26,6 +26,12 @@ interface AlmacenLocal {
 
     /** Guarda el movimiento y el producto con su cantidad nueva (RNF-03: ambas cosas o ninguna). */
     suspend fun guardarMovimiento(movimiento: Movimiento, producto: Producto)
+
+    /** Cantidad de movimientos registrados para un producto. */
+    suspend fun contarMovimientos(productoId: String): Int
+
+    /** Borra un producto por id (solo se usa con productos sin movimientos). */
+    suspend fun eliminarProducto(productoId: String)
 
     /**
      * Reemplaza TODOS los productos y movimientos (los usuarios no cambian). Los movimientos se

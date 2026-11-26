@@ -60,6 +60,14 @@ interface ProductoDao {
     @Upsert
     suspend fun guardarVarios(productos: List<ProductoEntity>)
 
+    /**
+     * Eliminar un producto (DELETE del CRUD). Solo se llama cuando el producto NO tiene movimientos:
+     * FuenteLocal lo revisa antes y, además, la clave foránea RESTRICT de "movimientos" impide
+     * borrar un producto con historial (RN-06).
+     */
+    @Query("DELETE FROM productos WHERE id = :id")
+    suspend fun eliminarPorId(id: String): Int
+
     /** Solo para "Restablecer datos de ejemplo", dentro de una transacción. */
     @Query("DELETE FROM productos")
     suspend fun borrarTodos()
@@ -78,6 +86,10 @@ interface MovimientoDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertar(movimiento: MovimientoEntity)
+
+    /** Cuántos movimientos tiene un producto (para decidir si se puede eliminar). */
+    @Query("SELECT COUNT(*) FROM movimientos WHERE productoId = :productoId")
+    suspend fun contarDeProducto(productoId: String): Int
 
     @Upsert
     suspend fun guardarVarios(movimientos: List<MovimientoEntity>)
