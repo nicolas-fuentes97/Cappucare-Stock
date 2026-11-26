@@ -7,7 +7,7 @@ import com.cappucare.app.model.Usuario
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** [AlmacenLocal] sobre Room: la base del MODO LOCAL (archivo "cappucare_local.db"). */
+/** [AlmacenLocal] sobre Room: la base de la app (archivo "cappucare_local.db"). */
 class AlmacenRoom(private val db: AppDatabase) : AlmacenLocal {
 
     private val usuarioDao = db.usuarioDao()
@@ -35,6 +35,13 @@ class AlmacenRoom(private val db: AppDatabase) : AlmacenLocal {
             movimientoDao.insertar(movimiento.aEntidad())
             productoDao.actualizar(producto.aEntidad())
         }
+    }
+
+    override suspend fun contarMovimientos(productoId: String): Int =
+        movimientoDao.contarDeProducto(productoId)
+
+    override suspend fun eliminarProducto(productoId: String) {
+        productoDao.eliminarPorId(productoId)
     }
 
     /** Movimientos antes que productos al borrar y productos antes que movimientos al insertar (clave foránea). */

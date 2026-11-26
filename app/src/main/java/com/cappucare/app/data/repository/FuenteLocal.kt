@@ -103,6 +103,24 @@ class FuenteLocal(
         ApiResult.Success(actualizado)
     }
 
+    /**
+     * Eliminar (la "D" del CRUD): borra el producto SOLO si no tiene movimientos, por ejemplo uno
+     * creado por error. Si ya tiene historial no se borra (RN-06: el historial no se altera) y se
+     * responde REGLA_DE_NEGOCIO para que el usuario lo dé de baja (RF-03).
+     */
+    override suspend fun eliminarProducto(productoId: String): ApiResult<Producto> = protegido {
+        almacen.enTransaccion<ApiResult<Producto>> {
+            val actual = almacen.productosActuales().firstOrNull { it.id == productoId }
+                ?: return@enTransaccion error("El producto ya no existe", TipoError.NO_ENCONTRADO)
+            val cantidadMovimientos = almacen.contarMovimientos(productoId)
+            if (cantidadMovimientos > 0) {
+                return@enTransaccion error(mensajeConMovimientos(cantidadMovimientos), TipoError.REGLA_DE_NEGOCIO)
+            }
+            almacen.eliminarProducto(productoId)
+            ApiResult.Success(actual)
+        }
+    }
+
     // ---------------------------------------------------------------- RF-04 / RF-05 / RF-06 / RF-07
 
     /**
@@ -197,5 +215,11 @@ class FuenteLocal(
 
     companion object {
         const val MENSAJE_CREDENCIALES = "Usuario o clave incorrectos"
+
+        /** Mensaje cuando se intenta eliminar un producto que ya tiene historial. */
+        fun mensajeConMovimientos(cantidad: Int): String {
+            val texto = if (cantidad == 1) "1 movimiento" else "$cantidad movimientos"
+            return "No se puede eliminar: tiene $texto en su historial. Puedes darlo de baja."
+        }
     }
 }

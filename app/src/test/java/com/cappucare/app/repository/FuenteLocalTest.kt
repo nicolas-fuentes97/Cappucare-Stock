@@ -207,6 +207,41 @@ class FuenteLocalTest {
         assertEquals(TipoError.NO_ENCONTRADO, r.tipo)
     }
 
+    // ---------------------------------------------------------------- eliminar (CRUD)
+
+    @Test
+    fun eliminarUnProductoSinMovimientosLoBorraDeLaBase() = runBlocking {
+        val creado = (fuente.guardarProducto(nuevoProducto()) as ApiResult.Success).datos
+        val r = fuente.eliminarProducto(creado.id)
+        assertTrue(r is ApiResult.Success)
+        assertEquals(creado.id, (r as ApiResult.Success).datos.id)
+        assertFalse(almacen.productosGuardados.any { it.id == creado.id })
+    }
+
+    @Test
+    fun noSeEliminaUnProductoConMovimientosYSeSugiereDarDeBaja() = runBlocking {
+        val conHistorial = MockData.movimientos.first().productoId
+        val cantidad = MockData.movimientos.count { it.productoId == conHistorial }
+        val r = fuente.eliminarProducto(conHistorial)
+        r as ApiResult.Error
+        assertEquals(TipoError.REGLA_DE_NEGOCIO, r.tipo)
+        assertEquals(FuenteLocal.mensajeConMovimientos(cantidad), r.mensaje)
+        assertTrue(almacen.productosGuardados.any { it.id == conHistorial })
+    }
+
+    @Test
+    fun eliminarUnProductoInexistenteEsNoEncontrado() = runBlocking {
+        val r = fuente.eliminarProducto("P99")
+        r as ApiResult.Error
+        assertEquals(TipoError.NO_ENCONTRADO, r.tipo)
+    }
+
+    @Test
+    fun elMensajeDeMovimientosUsaSingularYPlural() {
+        assertTrue(FuenteLocal.mensajeConMovimientos(1).contains("1 movimiento en"))
+        assertTrue(FuenteLocal.mensajeConMovimientos(3).contains("3 movimientos en"))
+    }
+
     // ---------------------------------------------------------------- datos de ejemplo
 
     @Test

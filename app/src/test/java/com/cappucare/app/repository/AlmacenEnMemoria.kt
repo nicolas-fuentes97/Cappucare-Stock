@@ -8,7 +8,7 @@ import com.cappucare.app.model.Usuario
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
-/** Base local en memoria: reemplaza a Room en las pruebas JVM del modo local (sin Android). */
+/** Base en memoria: reemplaza a Room en las pruebas JVM (sin Android ni emulador). */
 class AlmacenEnMemoria(private val usuarios: List<Usuario> = MockData.usuarios) : AlmacenLocal {
 
     private val _productos = MutableStateFlow(MockData.productos)
@@ -38,6 +38,13 @@ class AlmacenEnMemoria(private val usuarios: List<Usuario> = MockData.usuarios) 
     override suspend fun guardarMovimiento(movimiento: Movimiento, producto: Producto) {
         guardarProducto(producto)
         _movimientos.value = listOf(movimiento) + _movimientos.value
+    }
+
+    override suspend fun contarMovimientos(productoId: String): Int =
+        _movimientos.value.count { it.productoId == productoId }
+
+    override suspend fun eliminarProducto(productoId: String) {
+        _productos.value = _productos.value.filterNot { it.id == productoId }
     }
 
     override suspend fun reemplazarDatos(productos: List<Producto>, movimientos: List<Movimiento>) {

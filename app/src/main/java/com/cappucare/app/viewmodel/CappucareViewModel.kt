@@ -171,7 +171,7 @@ class CappucareViewModel @JvmOverloads constructor(
         }
     }
 
-    /** RN-08 (supuesto SUP-06): solo el Personal encargado crea, edita y cambia estados. */
+    /** RN-08 (supuesto SUP-06): solo el Personal encargado crea, edita, cambia estados y elimina. */
     fun puedeEditarCatalogo(): Boolean = _usuarioActivo.value?.perfil?.puedeEditarCatalogo == true
 
     // =====================================================================
@@ -237,6 +237,26 @@ class CappucareViewModel @JvmOverloads constructor(
         }
         escribir({ fuente.cambiarEstado(productoId, nuevoEstado) }) {
             avisar("Estado actualizado a ${nuevoEstado.etiqueta}")
+        }
+    }
+
+    /** true si el producto no tiene movimientos (solo esos se pueden eliminar). */
+    fun puedeEliminar(productoId: String): Boolean = movimientos.value.none { it.productoId == productoId }
+
+    /**
+     * Eliminar (CRUD): solo el Personal encargado y solo productos SIN movimientos. El repositorio
+     * vuelve a revisar la regla contra la base. [onEliminado] se llama cuando quedó borrado (la
+     * pantalla de detalle vuelve a la lista).
+     */
+    fun eliminarProducto(productoId: String, onEliminado: () -> Unit = {}) {
+        if (!puedeEditarCatalogo()) {
+            avisar(MENSAJE_SIN_PERMISO)
+            return
+        }
+        escribir({ fuente.eliminarProducto(productoId) }) { eliminado ->
+            if (_productoSeleccionadoId.value == productoId) _productoSeleccionadoId.value = null
+            avisar("Producto \"${eliminado.nombre}\" eliminado")
+            onEliminado()
         }
     }
 

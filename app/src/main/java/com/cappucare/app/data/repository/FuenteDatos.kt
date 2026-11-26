@@ -34,6 +34,9 @@ interface FuenteDatos {
     /** RF-03. */
     suspend fun cambiarEstado(productoId: String, nuevoEstado: EstadoProducto): ApiResult<Producto>
 
+    /** Eliminar (CRUD): solo productos SIN movimientos; con historial se dan de baja (RN-06). */
+    suspend fun eliminarProducto(productoId: String): ApiResult<Producto>
+
     /** RF-04 / RF-05 / RF-06 / RF-07. */
     suspend fun registrarMovimiento(
         productoId: String,
