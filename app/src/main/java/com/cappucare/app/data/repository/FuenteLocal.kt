@@ -20,17 +20,14 @@ import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 /**
- * MODO LOCAL (respaldo para la defensa si no hay acceso al servicio): opera SOLO con la base Room
- * del equipo, sin red, y con las mismas reglas de negocio que el servidor. No duplica reglas: usa
- * las funciones puras de reglas/ (Validaciones, ReglasInventario, Seguridad), las mismas que
+ * Repositorio de la app: opera con la base Room del equipo (SQLite), sin red. No duplica reglas:
+ * usa las funciones puras de reglas/ (Validaciones, ReglasInventario, Seguridad), las mismas que
  * validan los formularios.
  *
- *  - Los errores salen con el mismo [TipoError] y el mismo campo que devuelve el servidor
- *    (por ejemplo CONFLICTO en "codigo" para un código repetido), así la interfaz los trata igual.
- *  - Es una base INDEPENDIENTE de la copia del servidor (otro archivo Room): lo que se crea aquí
- *    no se envía al servidor ni se sincroniza al volver al modo servidor.
- *  - Todo se guarda de inmediato (no hay cola de pendientes ni sincronización).
- *  - El permiso por perfil (RN-08) lo aplica el ViewModel antes de llamar, igual que en modo servidor.
+ *  - Los errores salen como [ApiResult.Error] con un [TipoError] y el campo del formulario
+ *    (por ejemplo CONFLICTO en "codigo" para un código repetido), así la interfaz los muestra igual.
+ *  - Todo se guarda de inmediato.
+ *  - El permiso por perfil (RN-08) lo aplica el ViewModel antes de llamar.
  */
 class FuenteLocal(
     private val almacen: AlmacenLocal,
@@ -43,19 +40,15 @@ class FuenteLocal(
 
     // ---------------------------------------------------------------- RF-00
 
-    /** Login local: busca el usuario en Room y compara el SHA-256 con la misma sal que usa el servidor. */
+    /** Login: busca el usuario en Room y compara el SHA-256 de la clave (con sal) con el guardado. */
     override suspend fun iniciarSesion(usuario: String, clave: String): ResultadoLogin {
         val encontrado = almacen.buscarUsuario(usuario.trim())
         return if (encontrado != null && Seguridad.verificar(clave, encontrado.claveHash)) {
-            ResultadoLogin.Exito(encontrado, sinConexion = false)
+            ResultadoLogin.Exito(encontrado)
         } else {
             ResultadoLogin.Rechazado(MENSAJE_CREDENCIALES)
         }
     }
-
-    override suspend fun cerrarSesion() = Unit
-
-    override suspend fun sincronizar(): ApiResult<Unit> = ApiResult.Success(Unit)
 
     // ---------------------------------------------------------------- RF-01 / RF-03
 
@@ -150,15 +143,12 @@ class FuenteLocal(
 
     // ---------------------------------------------------------------- datos de ejemplo
 
-    /**
-     * "Restablecer datos locales": vuelve a los datos de ejemplo de MockData (8 productos y 11
-     * movimientos). Solo toca la base local; la copia del servidor no se modifica.
-     */
-    suspend fun restablecerDatos() {
+    /** "Restablecer datos de ejemplo": vuelve a los datos de MockData (8 productos y 11 movimientos). */
+    override suspend fun restablecerDatos() {
         almacen.reemplazarDatos(MockData.productos, MockData.movimientos)
     }
 
-    // ---------------------------------------------------------------- errores como los del servidor
+    // ---------------------------------------------------------------- errores
 
     /** Una falla inesperada de la base (por ejemplo el índice único de Room) se vuelve un error con mensaje, no un cierre de la app. */
     private suspend fun <T> protegido(bloque: suspend () -> ApiResult<T>): ApiResult<T> =
@@ -173,7 +163,7 @@ class FuenteLocal(
     private fun error(mensaje: String, tipo: TipoError, campo: String? = null) =
         ApiResult.Error(mensaje, codigoHttp = null, campo = campo, tipo = tipo)
 
-    /** Primer error del formulario de producto, en el mismo orden de campos que revisa el servidor. */
+    /** Primer error del formulario de producto, en el orden de los campos del formulario. */
     private fun errorDeProducto(e: ErroresProducto): ApiResult.Error? {
         e.codigo?.let {
             val tipo = if (it == Validaciones.MENSAJE_CODIGO_REPETIDO) TipoError.CONFLICTO else TipoError.SOLICITUD_INVALIDA
@@ -187,7 +177,7 @@ class FuenteLocal(
         return null
     }
 
-    /** Error de movimiento con el tipo que daría el servidor: dato inválido (400) o regla de negocio (422). */
+    /** Error de movimiento: dato inválido (SOLICITUD_INVALIDA) o regla de negocio (REGLA_DE_NEGOCIO). */
     private fun errorDeMovimiento(
         e: ErroresMovimiento,
         tipo: TipoMovimiento,

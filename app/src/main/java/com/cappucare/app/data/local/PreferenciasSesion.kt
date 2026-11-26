@@ -16,17 +16,23 @@ private val Context.almacenSesion by preferencesDataStore(name = "sesion")
  * RF-00 (opcional) · Recuerda con DataStore el último usuario (correo) que inició sesión, para
  * rellenar el campo en el próximo ingreso. NUNCA se guarda la clave.
  */
-class PreferenciasSesion(private val context: Context) {
+/** Lo que el ViewModel necesita de las preferencias (en las pruebas se usa una versión en memoria). */
+interface PreferenciasUsuario {
+    val ultimoUsuario: Flow<String>
+    suspend fun guardarUltimoUsuario(usuario: String)
+}
+
+class PreferenciasSesion(private val context: Context) : PreferenciasUsuario {
 
     private val claveUltimoUsuario = stringPreferencesKey("ultimo_usuario")
 
-    val ultimoUsuario: Flow<String> = context.almacenSesion.data
+    override val ultimoUsuario: Flow<String> = context.almacenSesion.data
         .catch { error ->
             if (error is IOException) emit(emptyPreferences()) else throw error
         }
         .map { preferencias -> preferencias[claveUltimoUsuario].orEmpty() }
 
-    suspend fun guardarUltimoUsuario(usuario: String) {
+    override suspend fun guardarUltimoUsuario(usuario: String) {
         context.almacenSesion.edit { preferencias -> preferencias[claveUltimoUsuario] = usuario }
     }
 }

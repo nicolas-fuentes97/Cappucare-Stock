@@ -2,9 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- EA3 · API REST: acceso a internet / red local y estado de la red. -->
+    <!-- API externa (mindicador.cl): acceso a internet para consultar los indicadores del día. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- RNF-07 (opcional): notificación de stock mínimo. En Android 13+ se pide en tiempo de
          ejecución desde Alertas de reposición; en versiones anteriores se concede al instalar. -->
@@ -19,7 +18,6 @@
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Cappucare">
         <activity

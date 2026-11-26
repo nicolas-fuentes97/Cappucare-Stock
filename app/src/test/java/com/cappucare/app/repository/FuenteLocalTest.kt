@@ -22,8 +22,8 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * MODO LOCAL: la fuente que opera solo con la base del equipo (aquí, una copia en memoria) aplica
- * las mismas reglas de negocio que el servidor y devuelve los mismos tipos de error.
+ * Repositorio (FuenteLocal) con la base del equipo reemplazada por una copia en memoria: aplica las
+ * reglas de negocio y devuelve el tipo de error y el campo de cada caso.
  */
 class FuenteLocalTest {
 
@@ -52,12 +52,11 @@ class FuenteLocalTest {
     // ---------------------------------------------------------------- login local
 
     @Test
-    fun loginLocalAceptaLaClaveCorrectaConLaMismaSalDelServidor() = runBlocking {
+    fun loginAceptaLaClaveCorrectaSinDistinguirMayusculasEnElUsuario() = runBlocking {
         val r = fuente.iniciarSesion("  ENCARGADO@cappucare.cl ", "encargado123")
         assertTrue(r is ResultadoLogin.Exito)
         r as ResultadoLogin.Exito
         assertEquals(Perfil.ENCARGADO, r.usuario.perfil)
-        assertFalse(r.sinConexion)
     }
 
     @Test
@@ -208,12 +207,7 @@ class FuenteLocalTest {
         assertEquals(TipoError.NO_ENCONTRADO, r.tipo)
     }
 
-    // ---------------------------------------------------------------- sin servidor y datos de ejemplo
-
-    @Test
-    fun enModoLocalNoHayNadaQueSincronizar() = runBlocking {
-        assertTrue(fuente.sincronizar() is ApiResult.Success)
-    }
+    // ---------------------------------------------------------------- datos de ejemplo
 
     @Test
     fun restablecerDatosVuelveALosDatosDeEjemplo() = runBlocking {

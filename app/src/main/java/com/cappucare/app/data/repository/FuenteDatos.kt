@@ -10,15 +10,12 @@ import com.cappucare.app.model.Usuario
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Única interfaz de datos que conoce el ViewModel. Tiene tres implementaciones:
+ * Repositorio: la única interfaz de datos que conoce el ViewModel. Su implementación es
+ * [FuenteLocal] (Room/SQLite en el equipo). Por ser una interfaz, en las pruebas del ViewModel se
+ * puede reemplazar por un doble de prueba (MockK) sin cambiar el ViewModel.
  *
- *  - [FuenteLocal]: MODO LOCAL (solo Room, sin red; mismas reglas de negocio que el servidor).
- *  - [FuenteServidor]: MODO SERVIDOR (CappucareRepository: API como fuente de verdad + copia en Room).
- *  - [SelectorFuente]: la que usa el ViewModel; en cada operación delega en una de las dos según el
- *    modo vigente (ModoOperacion), así el cambio de modo es inmediato.
- *
- * Las dos primeras responden igual (ApiResult con el mismo tipo de error para la misma regla),
- * por lo que el ViewModel y las pantallas no distinguen de dónde vienen los datos.
+ * Las escrituras devuelven [ApiResult]: Success con el dato guardado o Error con el mensaje, el
+ * tipo de error y el campo del formulario al que corresponde.
  */
 interface FuenteDatos {
 
@@ -31,18 +28,13 @@ interface FuenteDatos {
     /** RF-00. */
     suspend fun iniciarSesion(usuario: String, clave: String): ResultadoLogin
 
-    suspend fun cerrarSesion()
-
-    /** Renueva la copia desde el servidor (en modo local no hay nada que sincronizar). */
-    suspend fun sincronizar(): ApiResult<Unit>
-
     /** RF-01: crea (id vacío) o edita. */
     suspend fun guardarProducto(producto: Producto): ApiResult<Producto>
 
     /** RF-03. */
     suspend fun cambiarEstado(productoId: String, nuevoEstado: EstadoProducto): ApiResult<Producto>
 
-    /** RF-04 / RF-05 / RF-06 / RF-07 (en modo servidor el responsable lo pone el servidor desde el token). */
+    /** RF-04 / RF-05 / RF-06 / RF-07. */
     suspend fun registrarMovimiento(
         productoId: String,
         tipo: TipoMovimiento,
@@ -51,4 +43,7 @@ interface FuenteDatos {
         observacion: String,
         responsable: Usuario
     ): ApiResult<ResultadoMovimiento>
+
+    /** Vuelve a los datos de ejemplo (8 productos y 11 movimientos). */
+    suspend fun restablecerDatos()
 }

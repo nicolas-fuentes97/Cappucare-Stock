@@ -19,7 +19,7 @@ object Validaciones {
 
     const val CANTIDAD_MAXIMA = 100_000
 
-    /** RN-04: mensaje del código repetido (la validación y el modo local lo comparten). */
+    /** RN-04: mensaje del código repetido (la validación del formulario y FuenteLocal lo comparten). */
     const val MENSAJE_CODIGO_REPETIDO = "Ya existe un producto con ese código"
 
     private val formatoCorreo = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")

@@ -13,9 +13,7 @@ import com.cappucare.app.data.MockData
  * Base de datos local (Room sobre SQLite) — RT-02 / RNF-01: los datos sobreviven al cierre
  * de la app y funcionan sin conexión.
  *
- * Hay DOS archivos con las mismas tablas y la misma carga inicial: "cappucare.db" (modo servidor:
- * copia de la API) y "cappucare_local.db" (modo local: datos propios del equipo, independientes).
- * Instancia única por archivo (patrón Singleton).
+ * Un solo archivo, "cappucare_local.db", con una instancia única para toda la app (patrón Singleton).
  * Si se cambia una entidad durante el desarrollo: subir "version" (y agregar la migración) o
  * desinstalar la app.
  */
@@ -31,29 +29,27 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun movimientoDao(): MovimientoDao
 
     companion object {
-        /** Base del modo SERVIDOR (copia local de lo que entrega la API). */
-        const val NOMBRE_SERVIDOR = "cappucare.db"
+        /** Archivo de la base (el mismo nombre que usaba el modo local de la plantilla). */
+        const val NOMBRE = "cappucare_local.db"
 
-        /** Base del modo LOCAL: independiente de la anterior (no se sincroniza con el servidor). */
-        const val NOMBRE_LOCAL = "cappucare_local.db"
+        @Volatile
+        private var instancia: AppDatabase? = null
 
-        private val instancias = HashMap<String, AppDatabase>()
-
-        /** Una instancia por archivo (patrón Singleton): cada modo comparte su propia conexión. */
-        fun obtener(context: Context, nombre: String = NOMBRE_SERVIDOR): AppDatabase =
-            synchronized(this) {
-                instancias.getOrPut(nombre) {
-                    Room.databaseBuilder(
-                        context.applicationContext,
-                        AppDatabase::class.java,
-                        nombre
-                    )
-                        .addCallback(CargaInicial)
-                        .build()
-                }
+        /** Instancia única (patrón Singleton): toda la app comparte la misma conexión. */
+        fun obtener(context: Context): AppDatabase =
+            instancia ?: synchronized(this) {
+                instancia ?: Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    NOMBRE
+                )
+                    .addCallback(CargaInicial)
+                    .build()
+                    .also { instancia = it }
             }
     }
 }
+
 
 /**
  * Carga inicial: la PRIMERA vez que se crea la base inserta los datos ficticios de MockData

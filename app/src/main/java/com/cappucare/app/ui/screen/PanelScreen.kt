@@ -36,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cappucare.app.navigation.Rutas
 import com.cappucare.app.ui.components.BarraSuperior
-import com.cappucare.app.ui.components.EstadoConexion
 import com.cappucare.app.viewmodel.CappucareViewModel
 import androidx.navigation.NavHostController
 
@@ -69,8 +68,6 @@ fun PanelScreen(
         ) {
             Text("Hola, ${usuario?.nombre.orEmpty()}", style = MaterialTheme.typography.titleLarge)
             Text("Perfil: ${usuario?.perfil?.etiqueta.orEmpty()}", style = MaterialTheme.typography.bodyMedium)
-
-            EstadoConexion(viewModel)       // EA3: progreso y errores de la API (no se dibuja en modo local)
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 TarjetaResumen("Productos", productos.size.toString(), Modifier.weight(1f))

@@ -1,6 +1,6 @@
 package com.cappucare.app.data.remote
 
-/** Tipo de error devuelto por el servidor o detectado al leer su respuesta. */
+/** Tipo de error de una operación (repositorio local o API externa). */
 enum class TipoError {
     SOLICITUD_INVALIDA,   // 400 (y otros 4xx): dato ausente o con formato inválido
     NO_AUTORIZADO,        // 401: credenciales incorrectas o sesión vencida
@@ -8,18 +8,17 @@ enum class TipoError {
     NO_ENCONTRADO,        // 404
     CONFLICTO,            // 409: por ejemplo código de producto repetido (RN-04)
     REGLA_DE_NEGOCIO,     // 422: stock insuficiente, estado incoherente, etc.
-    SERVIDOR,             // 5xx
-    RESPUESTA_INVALIDA,   // el servidor respondió algo que la app no entiende
+    SERVIDOR,             // 5xx de la API externa
+    RESPUESTA_INVALIDA,   // la API respondió algo que la app no entiende
     BLOQUEADO,            // no se pudo establecer una conexión segura (SSL)
     DESCONOCIDO
 }
 
 /**
- * Resultado de una llamada a la API. Los tres casos que la interfaz distingue:
- *  - [Success]: llegó la respuesta.
- *  - [Error]: el servidor respondió pero rechazó la operación (mensaje listo para el usuario, y
- *    el [campo] del formulario cuando aplica).
- *  - [SinConexion]: no se pudo llegar al servidor (sin red, servidor apagado, tiempo agotado).
+ * Resultado de una operación de datos (el repositorio local o la API externa). Tres casos:
+ *  - [Success]: la operación se hizo y trae los datos.
+ *  - [Error]: se rechazó (mensaje listo para el usuario y el [campo] del formulario cuando aplica).
+ *  - [SinConexion]: no se pudo llegar a la API externa (sin red o tiempo agotado).
  */
 sealed class ApiResult<out T> {
 
@@ -49,9 +48,7 @@ sealed class ApiResult<out T> {
     }
 
     companion object {
-        const val MENSAJE_SIN_CONEXION = "Sin conexión con el servidor. Revisa tu red o la dirección del servidor."
+        const val MENSAJE_SIN_CONEXION = "Sin conexión a internet. Revisa tu red y vuelve a intentar."
     }
 }
 
-/** El servidor respondió, pero faltan campos o traen valores que la app no conoce. */
-class RespuestaInvalidaException(mensaje: String) : Exception(mensaje)
