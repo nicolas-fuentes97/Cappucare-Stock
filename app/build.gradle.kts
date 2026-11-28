@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     // KSP: genera el código de Room (DAO, base de datos) al compilar.
     alias(libs.plugins.ksp)
+    // JaCoCo (viene con Gradle): mide qué parte del código recorren las pruebas unitarias.
+    jacoco
 }
 
 /**
@@ -48,6 +50,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Activa la medición de cobertura en las pruebas unitarias (la usa la tarea reporteCobertura).
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -59,6 +65,11 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
+    }
+
+    testOptions {
+        // Las pruebas JVM no tienen Android: las llamadas a clases de Android devuelven valores por defecto.
+        unitTests.isReturnDefaultValues = true
     }
 
     compileOptions {
@@ -127,4 +138,40 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+/**
+ * Reporte de cobertura de la LÓGICA de la app (ViewModel, repositorio y reglas de negocio).
+ * Ejecuta las pruebas unitarias y deja el informe en app/build/reports/jacoco/reporteCobertura/
+ * (html/index.html para abrir en el navegador y reporteCobertura.xml).
+ * Se excluyen las pantallas (Compose), la base Room y los modelos de datos: no tienen lógica propia.
+ */
+tasks.register<JacocoReport>("reporteCobertura") {
+    group = "verification"
+    description = "Pruebas unitarias + cobertura de viewmodel, repositorio y reglas"
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+        csv.required.set(false)
+    }
+
+    val incluidas = listOf(
+        "com/cappucare/app/viewmodel/**",
+        "com/cappucare/app/data/repository/**",
+        "com/cappucare/app/reglas/**"
+    )
+    classDirectories.setFrom(
+        fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) { include(incluidas) }
+    )
+    sourceDirectories.setFrom(files("src/main/java"))
+    executionData.setFrom(
+        layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+    )
+}
+
+// Al correr las pruebas unitarias (configuración "Pruebas unitarias") se genera también el reporte de cobertura.
+tasks.withType<Test>().configureEach {
+    if (name == "testDebugUnitTest") finalizedBy("reporteCobertura")
 }
