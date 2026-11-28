@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cappucare.app.navigation.Rutas
 import com.cappucare.app.ui.components.BarraSuperior
+import com.cappucare.app.ui.components.TarjetaIndicadores
 import com.cappucare.app.viewmodel.CappucareViewModel
 import androidx.navigation.NavHostController
 
@@ -79,6 +80,9 @@ fun PanelScreen(
                 )
                 TarjetaResumen("Movimientos", movimientos.size.toString(), Modifier.weight(1f))
             }
+
+            // API externa (Retrofit): indicadores del día para cotizar compras. Si falla, solo esta tarjeta muestra el error.
+            TarjetaIndicadores()
 
             Button(modifier = Modifier.fillMaxWidth(), onClick = { navController.navigate(Rutas.PRODUCTOS) }) {
                 Text("Productos e insumos")
